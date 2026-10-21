@@ -7,7 +7,7 @@ zoom en los cortes, capturas propias como tarjetas y volumen parejo.
 ## Cómo instalarla (estudiantes)
 
 1. En claude.ai ve a **Configuración → Capacidades** y activa **Ejecución de código y creación de archivos**.
-2. Descarga `editor-reels.zip` desde la sección [Releases](../../releases/latest) de este repositorio.
+2. Descarga la skill: [editor-reels.zip](https://github.com/andresulloa0124-hub/editor-reels/raw/main/descargar/editor-reels.zip).
 3. En claude.ai ve a **Personalizar → Skills → "+" → Crear skill → Subir una skill** y sube el zip (sin descomprimir).
 4. Abre un chat nuevo, adjunta tu video (el archivo original del celular, no el que pasó por WhatsApp) y escribe: **"Edítame este Reel"**.
 
@@ -17,7 +17,8 @@ zoom en los cortes, capturas propias como tarjetas y volumen parejo.
 - `GUIA.md`: las instrucciones que sigue Claude (planeación de títulos, secciones, negritas, tarjetas).
 - `motor/editor.py`: transcribe con whisper.cpp y renderiza con FFmpeg + subtítulos ASS.
 - `motor/estilos/`: estilos listos (santi, santi-serif, santi-minimal, neutro).
-- Release `modelos`: modelos de transcripción (`ggml-small-q5_1.bin`, `ggml-base-q5_1.bin`).
+- Release `modelos`: modelos de transcripción (`ggml-small-q5_1.bin`, `ggml-base-q5_1.bin`). No borrarlo.
+- `descargar/editor-reels.zip`: la skill empaquetada para subir a claude.ai.
 
 Cualquier cambio en `main` le llega a todos los estudiantes en su siguiente chat, sin reinstalar nada.
 Si agregas archivos al motor, inclúyelos en `manifest.json`.
