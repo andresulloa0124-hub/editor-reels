@@ -1,0 +1,66 @@
+{
+  "_ayuda": "Estilo del Reel. Para cambiarlo, pídeselo a Claude con tus palabras.",
+  "subtitulos": {
+    "activados": true,
+    "fuente": "Montserrat",
+    "peso": 900,
+    "pesoEnfasis": 900,
+    "tamano": 78,
+    "mayusculas": true,
+    "colorTexto": "#FFFFFF",
+    "colorEnfasis": "#FFD60A",
+    "colorPalabraActiva": "#FFD60A",
+    "colorBorde": "#000000",
+    "grosorBorde": 10,
+    "sombra": true,
+    "estilo": "resaltado",
+    "posicionVertical": 68,
+    "palabrasPorBloque": 3,
+    "animacionEntrada": true
+  },
+  "titulos": {
+    "activados": true,
+    "fuente": "Montserrat",
+    "peso": 900,
+    "tamano": 118,
+    "mayusculas": true,
+    "color": "#FFFFFF",
+    "posicionVertical": 40,
+    "sombra": true,
+    "grosorBorde": 8,
+    "colorBorde": "#000000"
+  },
+  "secciones": {
+    "activados": true,
+    "fuente": "Montserrat",
+    "peso": 900,
+    "tamano": 70,
+    "mayusculas": true,
+    "color": "#FFFFFF",
+    "posicionVertical": 12,
+    "sombra": true,
+    "grosorBorde": 6,
+    "colorBorde": "#000000"
+  },
+  "zooms": {
+    "activados": true,
+    "intensidad": 1.12
+  },
+  "musica": {
+    "volumen": 0.08
+  },
+  "silencios": {
+    "duracionMinima": 0.45,
+    "margen": 0.12,
+    "sobreRuidoDb": 9,
+    "_ayuda": "duracionMinima: segundos de silencio para cortar. margen: segundos que se dejan antes y después de cada frase. sobreRuidoDb: cuántos dB por encima del ruido de fondo cuenta como voz (más alto = corta más)"
+  },
+  "transcripcion": {
+    "idioma": "es"
+  },
+  "_nombre": "neutro",
+  "tarjetas": {
+    "ancho": 0.74,
+    "posicionVertical": 70
+  }
+}

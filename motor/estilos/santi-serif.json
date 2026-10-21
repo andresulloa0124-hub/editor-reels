@@ -1,0 +1,66 @@
+{
+  "_ayuda": "Estilo del Reel. Para cambiarlo, pídeselo a Claude con tus palabras.",
+  "subtitulos": {
+    "activados": true,
+    "fuente": "PlayfairDisplay",
+    "peso": 600,
+    "pesoEnfasis": 700,
+    "tamano": 54,
+    "mayusculas": false,
+    "colorTexto": "#FFFFFF",
+    "colorEnfasis": "#FFFFFF",
+    "colorPalabraActiva": "#FFD60A",
+    "colorBorde": "#000000",
+    "grosorBorde": 0,
+    "sombra": true,
+    "estilo": "simple",
+    "posicionVertical": 52,
+    "palabrasPorBloque": 3,
+    "animacionEntrada": true
+  },
+  "titulos": {
+    "activados": true,
+    "fuente": "PlayfairDisplay",
+    "peso": 700,
+    "tamano": 112,
+    "mayusculas": false,
+    "color": "#FFFFFF",
+    "posicionVertical": 64,
+    "sombra": true,
+    "grosorBorde": 0,
+    "colorBorde": "#000000"
+  },
+  "secciones": {
+    "activados": true,
+    "fuente": "PlayfairDisplay",
+    "peso": 700,
+    "tamano": 70,
+    "mayusculas": false,
+    "color": "#FFFFFF",
+    "posicionVertical": 22,
+    "sombra": true,
+    "grosorBorde": 0,
+    "colorBorde": "#000000"
+  },
+  "zooms": {
+    "activados": true,
+    "intensidad": 1.15
+  },
+  "musica": {
+    "volumen": 0.08
+  },
+  "silencios": {
+    "duracionMinima": 0.35,
+    "margen": 0.1,
+    "sobreRuidoDb": 9,
+    "_ayuda": "duracionMinima: segundos de silencio para cortar. margen: segundos que se dejan antes y después de cada frase. sobreRuidoDb: cuántos dB por encima del ruido de fondo cuenta como voz (más alto = corta más)"
+  },
+  "transcripcion": {
+    "idioma": "es"
+  },
+  "_nombre": "santi-serif",
+  "tarjetas": {
+    "ancho": 0.74,
+    "posicionVertical": 70
+  }
+}

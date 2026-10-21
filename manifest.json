@@ -1,0 +1,30 @@
+{
+  "version": "1.0.0",
+  "archivos": [
+    "GUIA.md",
+    "motor/editor.py",
+    "motor/estilos/neutro.json",
+    "motor/estilos/santi-minimal.json",
+    "motor/estilos/santi-serif.json",
+    "motor/estilos/santi.json",
+    "motor/fuentes/Anton-400.ttf",
+    "motor/fuentes/BebasNeue-400.ttf",
+    "motor/fuentes/Inter-600.ttf",
+    "motor/fuentes/Inter-800.ttf",
+    "motor/fuentes/Inter-900.ttf",
+    "motor/fuentes/LICENCIA-OFL.txt",
+    "motor/fuentes/Montserrat-600.ttf",
+    "motor/fuentes/Montserrat-800.ttf",
+    "motor/fuentes/Montserrat-900.ttf",
+    "motor/fuentes/Oswald-700.ttf",
+    "motor/fuentes/PlayfairDisplay-600.ttf",
+    "motor/fuentes/PlayfairDisplay-700.ttf",
+    "motor/fuentes/Poppins-500.ttf",
+    "motor/fuentes/Poppins-600.ttf",
+    "motor/fuentes/Poppins-800.ttf",
+    "motor/fuentes/Poppins-900.ttf",
+    "motor/fuentes/Rubik-800.ttf",
+    "motor/fuentes/Rubik-900.ttf",
+    "motor/fuentes/metricas.json"
+  ]
+}
