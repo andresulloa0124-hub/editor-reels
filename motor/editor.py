@@ -499,7 +499,9 @@ def generar_ass(estilo, subs, textos, ocultos):
                         tags += f"\\1c{color(s['colorPalabraActiva'])}"
                     # Al terminar la palabra se vuelve al estilo normal sin usar \\r (que borraría la capa de sombra)
                     volver = f"\\fn{f_sub}\\fs{tam_sub}\\1c{color(s['colorTexto'])}\\u0"
-                    piezas.append(f"{{{tags}}}{txt}{{{volver}}}" if tags else txt)
+                    # Las letras manuscritas e itálicas se inclinan: un espacio extra evita que se peguen a la siguiente palabra
+                    extra = "\\h" if ac else ""
+                    piezas.append(f"{{{tags}}}{txt}{{{volver}}}{extra}" if tags else txt)
                 anim = ""
                 if i == 0 and s.get("animacionEntrada", True):
                     anim = "\\fscx88\\fscy88\\t(0,140,\\fscx100\\fscy100)\\fad(70,0)"
