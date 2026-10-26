@@ -114,7 +114,7 @@ def lista(item, carpeta, c, idx):
     alto = max(180, max(len(b) for b in bloques) * int(tam * 1.18) + 80)
     filas = (n + columnas - 1) // columnas
     alto_total = filas * (alto + 10) + (filas - 1) * hueco
-    centro = H * (0.40 if item.get("fondo") else 0.74)
+    centro = item.get("centroY") or H * (0.40 if item.get("fondo") else 0.74)
     y0 = int(centro - alto_total / 2)
     capas = []
     for k, (it, lineas) in enumerate(zip(items, bloques)):
@@ -154,7 +154,7 @@ def checklist(item, carpeta, c, idx):
     alto_tit = len(lineas_tit) * 80 + (40 if titulo else 0)
     alto_fila = 104
     alto = 34 + alto_tit + len(items) * alto_fila + 24
-    centro = H * (0.33 if item.get("fondo") else 0.72)
+    centro = item.get("centroY") or H * (0.33 if item.get("fondo") else 0.72)
     y_pos = int(centro - alto / 2)
     capas = []
     tiempos = [min(max(float(i.get("aparece", item["inicio"])), item["inicio"]), item["fin"] - 0.2) for i in items]
@@ -232,3 +232,100 @@ def cita(item, carpeta, c, idx, foto):
     lado = item.get("lado", "derecha")
     x = W - img.width + pad - 40 if lado == "derecha" else 40 - pad
     return [{"archivo": archivo, "x": x, "y": 110 - pad, "inicio": item["inicio"], "fin": item["fin"], "entrada": "subir"}]
+
+
+# ------------------------------------------------------------------ modo horizontal
+def fondo_degradado(destino, arriba, abajo):
+    """Fondo vertical con degradado (arriba un tono oliva, abajo casi negro), como en los Reels horizontales de Santi."""
+    a, b = _rgb(arriba), _rgb(abajo)
+    col = Image.new("RGBA", (1, H))
+    for y in range(H):
+        k = y / (H - 1)
+        k = k * k * (3 - 2 * k)  # suavizado
+        col.putpixel((0, y), tuple(int(a[i] + (b[i] - a[i]) * k) for i in range(3)) + (255,))
+    col.resize((W, H)).save(destino)
+    return destino
+
+
+def _flecha_curva(d, x0, y0, x1, y1, grosor=6, color=(255, 255, 255, 255)):
+    """Flecha curva estilo trazo a mano: sale hacia la derecha y sube hasta (x1, y1)."""
+    import math
+
+    # Bezier cúbica: primero avanza casi horizontal y luego sube
+    p0, p1, p2, p3 = (x0, y0), (x0 + (x1 - x0) * 0.75, y0 + 6), (x1 + 4, y0 - (y0 - y1) * 0.35), (x1, y1)
+    puntos = []
+    for i in range(61):
+        t = i / 60
+        x = (1 - t) ** 3 * p0[0] + 3 * (1 - t) ** 2 * t * p1[0] + 3 * (1 - t) * t ** 2 * p2[0] + t ** 3 * p3[0]
+        y = (1 - t) ** 3 * p0[1] + 3 * (1 - t) ** 2 * t * p1[1] + 3 * (1 - t) * t ** 2 * p2[1] + t ** 3 * p3[1]
+        puntos.append((x, y))
+    d.line(puntos, fill=color, width=grosor, joint="curve")
+    r = grosor / 2
+    d.ellipse([x0 - r, y0 - r, x0 + r, y0 + r], fill=color)
+    ang = math.atan2(puntos[-1][1] - puntos[-6][1], puntos[-1][0] - puntos[-6][0])
+    largo = grosor * 4.5
+    punta = puntos[-1]
+    d.polygon([(punta[0] + math.cos(ang) * grosor, punta[1] + math.sin(ang) * grosor),
+               (punta[0] - largo * math.cos(ang + 0.5), punta[1] - largo * math.sin(ang + 0.5)),
+               (punta[0] - largo * math.cos(ang - 0.5), punta[1] - largo * math.sin(ang - 0.5))], fill=color)
+
+
+def _texto_apretado(d, xy, texto, fuente, color, anchor="ls", tracking=-0.04):
+    """Texto con letras un poco más juntas (como en las referencias). Devuelve el ancho final."""
+    esp = fuente.size * tracking
+    ancho = sum(d.textlength(ch, font=fuente) for ch in texto) + esp * (len(texto) - 1)
+    x, y = xy
+    if anchor[0] == "r":
+        x -= ancho
+    elif anchor[0] == "m":
+        x -= ancho / 2
+    for ch in texto:
+        d.text((x, y), ch, font=fuente, fill=color, anchor="l" + anchor[1])
+        x += d.textlength(ch, font=fuente) + esp
+    return ancho
+
+
+def encabezado(item, e, carpeta, alto_banda):
+    """Título fijo en la franja de arriba del modo horizontal.
+    Dos formas: texto centrado ("texto") o transformación "desde → hasta" con flecha curva."""
+    img = Image.new("RGBA", (W, alto_banda), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    blanco = _rgb(e.get("color", "#FFFFFF"))
+    f = _fuente(f"{e.get('fuente', 'Inter')}-{e.get('peso', 700)}", int(e.get("tamano", 72)))
+    f_det = _fuente(f"{e.get('fuenteDetalle', 'InterItalic')}-{e.get('pesoDetalle', 500)}", int(e.get("tamanoDetalle", 46)))
+    centro = alto_banda * e.get("centroEnBanda", 0.7)
+    if item.get("desde") and item.get("hasta"):
+        # Bloque izquierdo (abajo) y derecho (arriba), como "35 Workshops → 25 Mid Ticket"
+        xa, ya = 150, alto_banda * 0.835
+        ancho_a = _texto_apretado(d, (xa, ya), item["desde"], f, blanco, "ls")
+        if item.get("detalle"):
+            d.text((xa + ancho_a / 2, ya + 14), item["detalle"], font=f_det, fill=blanco, anchor="mt")
+        xb, yb = W - 135, alto_banda * 0.63
+        ancho_b = _texto_apretado(d, (xb, yb), item["hasta"], f, blanco, "rs")
+        _flecha_curva(d, xa + ancho_a + 32, ya + 8, xb - ancho_b * 0.42, yb + 28, grosor=6, color=blanco)
+    else:
+        lineas = item.get("texto", "").split("\n")
+        alto_l = f.size * 1.12
+        y = centro - alto_l * (len(lineas) - 1) / 2
+        for linea in lineas:
+            # Achicar si no cabe
+            fl = f
+            while d.textlength(linea, font=fl) > W - 120 and fl.size > 30:
+                fl = _fuente(f"{e.get('fuente', 'Inter')}-{e.get('peso', 700)}", fl.size - 4)
+            _texto_apretado(d, (W / 2, y), linea, fl, blanco, "mm")
+            y += alto_l
+        if item.get("detalle"):
+            d.text((W / 2, y + 4), item["detalle"], font=f_det, fill=blanco, anchor="mt")
+    # Sombra suave para que se lea sobre cualquier fondo
+    sombra = Image.new("RGBA", img.size, (0, 0, 0, 0))
+    sombra.paste((0, 0, 0, 150), (0, 4), img.split()[3])
+    sombra = sombra.filter(ImageFilter.GaussianBlur(8))
+    sombra.alpha_composite(img)
+    archivo = os.path.join(carpeta, "encabezado.png")
+    sombra.save(archivo)
+    return archivo
+
+
+def destello(destino):
+    Image.new("RGBA", (W, H), (255, 255, 255, 235)).save(destino)
+    return destino

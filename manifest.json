@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "archivos": [
     "GUIA.md",
     "motor/editor.py",
@@ -15,8 +15,10 @@
     "motor/fuentes/InstrumentSerif-400.ttf",
     "motor/fuentes/InstrumentSerifItalic-400.ttf",
     "motor/fuentes/Inter-600.ttf",
+    "motor/fuentes/Inter-700.ttf",
     "motor/fuentes/Inter-800.ttf",
     "motor/fuentes/Inter-900.ttf",
+    "motor/fuentes/InterItalic-500.ttf",
     "motor/fuentes/LICENCIA-OFL.txt",
     "motor/fuentes/Montserrat-600.ttf",
     "motor/fuentes/Montserrat-800.ttf",

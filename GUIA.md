@@ -14,6 +14,15 @@ El motor está en `/tmp/editor-reels/motor/editor.py`. Los archivos de trabajo q
 - De vez en cuando, un momento en **blanco y negro** para marcar un contraste.
 - **Refuerzos dinámicos**: cuando la persona enumera opciones o puntos, aparecen tarjetas que se van armando mientras habla. Algunas palabras cambian de tipo de letra (manuscrita, serif) según la emoción o la importancia de lo que dice. Así el Reel se siente vivo sin taparle la cara todo el tiempo.
 
+## Dos tipos de edición: vertical y horizontal
+
+El editor detecta solo cómo viene el video, al preparar:
+
+- **Vertical** (grabado con el celular parado): pantalla completa con todo lo de esta guía: títulos, secciones, acentos, refuerzos y zooms.
+- **Horizontal** (videollamada, podcast, cámara acostada): el video va **completo y centrado**, sobre un fondo degradado oscuro. Arriba lleva un **encabezado fijo** todo el video, y los subtítulos van dentro del video, abajo. Es el estilo de Santi para testimonios y entrevistas: limpio, sin títulos grandes ni tarjetas. Lee la sección "Modo horizontal" más abajo.
+
+Si la persona pide lo contrario ("recórtalo vertical" o "déjalo con bandas"), prepara con `--modo vertical` o `--modo horizontal`.
+
 ## 1. Encontrar lo que adjuntó
 
 - Busca el video en `/mnt/user-data/uploads/` y `/mnt/user-data/attachments/` (mp4, mov, m4v, webm). Si no adjuntó video, pídeselo: el archivo original del celular, idealmente de menos de 90 segundos.
@@ -120,6 +129,28 @@ python3 editor.py cuadro SEGUNDO
 
 Abre las imágenes que genera (`/mnt/user-data/outputs/cuadro-*.png`) y míralas tú. Si algo tapa la cara o se monta, ajústalo. Después borra esos PNG para que no se le entreguen a la persona.
 
+### 3d. Modo horizontal (si al preparar salió "📐 Video horizontal")
+
+En este modo `textos.json` lleva casi siempre solo esto:
+
+```json
+[
+  { "tipo": "encabezado", "desde": "35 Workshops", "detalle": "Nicho Música", "hasta": "25 Mid Ticket" },
+  { "tipo": "enfasis", "inicio": 9.4, "fin": 10.2 },
+  { "tipo": "destello", "en": 20.4 }
+]
+```
+
+- **encabezado** (obligatorio, uno solo, dura todo el video). Resume el resultado o la promesa del video en el estilo de Santi:
+  - **Transformación**: si hay un antes y un después o un paso de una cosa a otra, usa `desde`, `hasta` y opcionalmente `detalle`. Por ejemplo "35 Workshops → 25 Mid Ticket", con detalle "Nicho Música". Se dibuja con una flecha curva.
+  - **Resultado o titular**: si no, usa `texto` con 1 o 2 líneas cortas en formato título, separadas con `\n`. Por ejemplo "+80% Cierre En Llamada\nGracias a Su Workshop".
+  - Usa cifras reales que se dicen en el video. Máximo unas 26 letras por línea. Si no hay cifras, usa el resultado o la promesa principal.
+  - El encabezado es lo primero que se ve (sirve de portada del Reel), así que tiene que enganchar.
+- **enfasis**: igual que en vertical, en cifras y palabras clave.
+- **destello** (opcional): un flash blanco corto en `en` (segundos), en el cambio de tema más fuerte o cuando cambia de persona. Máximo uno o dos.
+- **acento** (opcional y con moderación): 1 o 2 en todo el video.
+- No uses `titulo`, `seccion`, `blancoynegro` ni tarjetas, salvo que la persona los pida. Si los pide, las tarjetas y las capturas aparecen en la franja libre de abajo.
+
 ## 4. Mostrar el plan y pedir aprobación
 
 Muéstrale un resumen corto antes de renderizar:
@@ -158,6 +189,12 @@ La persona pide cambios en lenguaje normal. Haz el cambio y vuelve a renderizar.
 | Sin títulos / sin secciones | `titulos.activados` / `secciones.activados` = false |
 | Sin zooms / zoom más suave o fuerte | `zooms.activados`, `zooms.intensidad` (1.08 suave, 1.15 normal, 1.22 fuerte) |
 | Música más alta o más baja | `musica.volumen` (0.05 muy suave, 0.08 normal, 0.15 alta) |
+| (Horizontal) Cambiar el encabezado | edita el elemento `encabezado` en `textos.json` |
+| (Horizontal) Encabezado más grande o más arriba | `horizontal.encabezado.tamano` (62 normal) y `horizontal.encabezado.centroEnBanda` (0.76 normal, menos = más arriba) en `estilo.json` |
+| (Horizontal) Video más arriba o más abajo | `horizontal.posicionVideo` (50 centrado, 40 más arriba) |
+| (Horizontal) Colores del fondo | `horizontal.fondoArriba` y `horizontal.fondoAbajo` (hexadecimal) |
+| (Horizontal) Subtítulos más arriba o más abajo dentro del video | `horizontal.subtitulos.dentroVideo` (0.84 normal, 0.75 más arriba) |
+| (Horizontal) Zoom en los cortes | `horizontal.zoom` = true |
 | Otro estilo completo | `python3 editor.py estilo NOMBRE` (santi, santi-serif, santi-minimal, santi-caja, neutro) |
 | Subtítulos en caja de color (como los de serif con fondo) | estilo `santi-caja`, o `subtitulos.fondoCaja` (hexadecimal) |
 | Más o menos refuerzos / cambios de letra | agrega o quita elementos `lista`, `checklist`, `cita`, `acento` en `textos.json` |

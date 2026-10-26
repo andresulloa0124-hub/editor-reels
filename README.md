@@ -6,6 +6,9 @@ zoom en los cortes, capturas propias como tarjetas y volumen parejo.
 Además agrega refuerzos dinámicos mientras la persona habla: tarjetas de lista, checklist con la opción resaltada,
 cita tipo foto y palabras que cambian de letra (manuscrita, serif, marcador) según lo que dice.
 
+Detecta solo si el video es **vertical** (edición a pantalla completa) u **horizontal** (video completo centrado
+sobre fondo degradado, encabezado fijo arriba y subtítulos dentro del video, estilo testimonio o entrevista).
+
 ## Cómo instalarla (estudiantes)
 
 1. En claude.ai ve a **Configuración → Capacidades** y activa **Ejecución de código y creación de archivos**.

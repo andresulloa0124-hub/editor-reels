@@ -256,7 +256,7 @@ def a_salida(t, tramos):
 
 
 # ------------------------------------------------------------------ preparar
-def preparar(video, sin_cortes=False, modelo="small"):
+def preparar(video, sin_cortes=False, modelo="small", modo=None):
     if not os.path.exists(video):
         raise SystemExit(f"❌ No encuentro el video: {video}")
     os.makedirs(TRABAJO, exist_ok=True)
@@ -267,8 +267,12 @@ def preparar(video, sin_cortes=False, modelo="small"):
     print(f"🎬 {os.path.basename(video)} · {info['duracion']:.1f} s · {info['ancho']}x{info['alto']}")
     if min(info["ancho"], info["alto"]) < 900:
         print("⚠️  El video tiene baja resolución (¿pasó por WhatsApp?). Se verá mejor con el archivo original del celular.")
-    if info["ancho"] > info["alto"]:
-        print("⚠️  El video es horizontal: se recortará al centro para quedar vertical.")
+    if modo not in ("horizontal", "vertical"):
+        modo = "horizontal" if info["ancho"] > info["alto"] * 1.05 else "vertical"
+    if modo == "horizontal":
+        print("📐 Video horizontal: se edita en modo horizontal (video completo centrado, título arriba y subtítulos).")
+    else:
+        print("📐 Video vertical: se edita en modo vertical (pantalla completa).")
 
     paso("Extrayendo el audio…")
     wav = ruta("audio-16k.wav")
@@ -332,6 +336,9 @@ def preparar(video, sin_cortes=False, modelo="small"):
         "duracion": round(duracion_final, 3),
         "tramos": [[round(a, 3), round(b, 3)] for a, b in tramos],
         "cortes": cortes,
+        "orientacion": modo,
+        "anchoOriginal": info["ancho"],
+        "altoOriginal": info["alto"],
     })
     guardar("subtitulos.json", subtitulos)
     guardar("textos.json", [])
@@ -579,7 +586,7 @@ def a_original(t, tramos):
     return tramos[-1][1] - 0.05
 
 
-def construir_capas(estilo, textos, broll, proyecto):
+def construir_capas(estilo, textos, broll, proyecto, geo=None):
     sys.path.insert(0, AQUI)
     import refuerzos
 
@@ -587,6 +594,9 @@ def construir_capas(estilo, textos, broll, proyecto):
     # Capturas propias (broll.json)
     ancho_t = int(W * estilo.get("tarjetas", {}).get("ancho", 0.74))
     y_centro = H * estilo.get("tarjetas", {}).get("posicionVertical", 70) / 100
+    if geo:
+        # En horizontal, las tarjetas van en la franja libre de abajo
+        y_centro = (geo["top"] + geo["vh"] + H) / 2
     for i, c in enumerate(broll):
         img = c.get("imagen") or c.get("archivo")
         if not img or not os.path.exists(img):
@@ -597,18 +607,35 @@ def construir_capas(estilo, textos, broll, proyecto):
         capas.append({"archivo": destino, "x": (W - w_t) // 2, "y": int(y_centro - h_t / 2),
                       "inicio": float(c["inicio"]), "fin": float(c["fin"]), "entrada": "subir"})
 
+    carpeta = ruta("refuerzos")
+    os.makedirs(carpeta, exist_ok=True)
+    dur = proyecto["duracion"]
+
+    # Encabezado fijo (modo horizontal) y destellos de transición
+    for t in textos:
+        if t.get("tipo") == "encabezado" and geo:
+            archivo = refuerzos.encabezado(t, geo["h"]["encabezado"], carpeta, geo["top"])
+            capas.append({"archivo": archivo, "x": 0, "y": 0, "inicio": float(t.get("inicio", 0)),
+                          "fin": float(t.get("fin", dur)), "entrada": "corte" if float(t.get("inicio", 0)) < 0.05 else "fade",
+                          "salida": float(t.get("fin", dur)) < dur - 0.05})
+        elif t.get("tipo") == "destello":
+            en = float(t.get("en", t.get("inicio", 0)))
+            blanco = refuerzos.destello(os.path.join(carpeta, "destello.png"))
+            capas.append({"archivo": blanco, "x": 0, "y": 0, "inicio": max(0, en - 0.12), "fin": min(dur, en + 0.24),
+                          "entrada": "fade"})
+
     # Refuerzos gráficos (textos.json)
     c = {**refuerzos.DEFECTO, **estilo.get("refuerzos", {})}
     if not c.get("activados", True):
         return capas
-    carpeta = ruta("refuerzos")
-    os.makedirs(carpeta, exist_ok=True)
     panel = None
     for i, t in enumerate(textos):
         tipo = t.get("tipo")
         if tipo not in ("lista", "checklist", "cita"):
             continue
         t = {**t, "inicio": float(t["inicio"]), "fin": float(t["fin"])}
+        if geo and not t.get("fondo"):
+            t["centroY"] = (geo["top"] + geo["vh"] + H) / 2
         if t.get("fondo") and tipo != "cita":
             panel = panel or refuerzos.panel(os.path.join(carpeta, "panel.png"), c)
             capas.append({"archivo": panel, "x": 0, "y": 0, "inicio": t["inicio"], "fin": t["fin"], "entrada": "fade"})
@@ -623,6 +650,33 @@ def construir_capas(estilo, textos, broll, proyecto):
                 "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}", foto], mostrar_error=False)
             capas += refuerzos.cita(t, carpeta, c, i, foto)
     return capas
+
+
+# ------------------------------------------------------------------ modo horizontal
+HORIZONTAL = {
+    "fondoArriba": "#414234",
+    "fondoAbajo": "#07080B",
+    "posicionVideo": 50,
+    "zoom": False,
+    "subtitulos": {"fuente": "Inter", "peso": 600, "pesoEnfasis": 800, "tamano": 62, "mayusculas": False,
+                   "estilo": "simple", "grosorBorde": 0, "sombra": True, "palabrasPorBloque": 3, "dentroVideo": 0.84},
+    "encabezado": {"fuente": "Inter", "peso": 600, "tamano": 62, "color": "#FFFFFF",
+                   "fuenteDetalle": "InterItalic", "pesoDetalle": 500, "tamanoDetalle": 42, "centroEnBanda": 0.76},
+}
+
+
+def aplicar_horizontal(estilo, proyecto):
+    """Ajusta el estilo para videos horizontales: el video va completo en el centro y los subtítulos dentro de él."""
+    h = {**HORIZONTAL, **estilo.get("horizontal", {})}
+    h["subtitulos"] = {**HORIZONTAL["subtitulos"], **estilo.get("horizontal", {}).get("subtitulos", {})}
+    h["encabezado"] = {**HORIZONTAL["encabezado"], **estilo.get("horizontal", {}).get("encabezado", {})}
+    ancho, alto = proyecto.get("anchoOriginal") or 1920, proyecto.get("altoOriginal") or 1080
+    vh = min(H, int(round(W * alto / ancho / 2)) * 2)
+    top = int(round((H - vh) * h["posicionVideo"] / 100 / 2)) * 2
+    sub = {**estilo["subtitulos"], **{k: v for k, v in h["subtitulos"].items() if k != "dentroVideo"}}
+    sub["posicionVertical"] = (top + vh * h["subtitulos"]["dentroVideo"]) / H * 100
+    nuevo = {**estilo, "subtitulos": sub, "zooms": {**estilo.get("zooms", {}), "activados": bool(h.get("zoom"))}}
+    return nuevo, {"vh": vh, "top": top, "h": h}
 
 
 # ------------------------------------------------------------------ render
@@ -643,7 +697,10 @@ def render(borrador=False, musica=None, estilo_nombre=None, hasta=None):
     tramos = proyecto["tramos"]
     dur = proyecto["duracion"]
 
-    capas = construir_capas(estilo, textos, broll, proyecto)
+    geo = None
+    if proyecto.get("orientacion") == "horizontal":
+        estilo, geo = aplicar_horizontal(estilo, proyecto)
+    capas = construir_capas(estilo, textos, broll, proyecto, geo)
     ass = generar_ass(estilo, subs, textos, [])
 
     # Zoom alternado por cortes
@@ -656,19 +713,31 @@ def render(borrador=False, musica=None, estilo_nombre=None, hasta=None):
     bn = [[t["inicio"], t["fin"]] for t in textos if t.get("tipo") == "blancoynegro"]
 
     sel = "+".join(f"between(t,{a:.3f},{b - 0.0005:.3f})" for a, b in tramos)
-    zw, zh = (int(W * k) // 2 * 2, int(H * k) // 2 * 2)
+    VW, VH = (W, geo["vh"]) if geo else (W, H)
+    zw, zh = (int(VW * k) // 2 * 2, int(VH * k) // 2 * 2)
     g = [
         f"[0:v]fps={FPS},select='{sel}',setpts=N/{FPS}/TB,"
-        f"scale={W}:{H}:force_original_aspect_ratio=increase:flags=bicubic,crop={W}:{H},setsar=1,split=2[base][paraz]",
-        f"[paraz]scale={zw}:{zh}:flags=bicubic,crop={W}:{H}:(iw-{W})/2:(ih-{H})*0.35[zoom]",
-        f"[base][zoom]overlay=enable='{entre(zonas_zoom) if zoom_on else '0'}'[v0]",
+        f"scale={VW}:{VH}:force_original_aspect_ratio=increase:flags=bicubic,crop={VW}:{VH},setsar=1,split=2[base][paraz]",
+        f"[paraz]scale={zw}:{zh}:flags=bicubic,crop={VW}:{VH}:(iw-{VW})/2:(ih-{VH})*0.35[zoom]",
+        f"[base][zoom]overlay=enable='{entre(zonas_zoom) if zoom_on else '0'}'[vz]",
     ]
+    entradas = ["-i", proyecto["video"]]
+    idx = 1
+    if geo:
+        # Fondo con degradado y el video completo encima, centrado
+        sys.path.insert(0, AQUI)
+        import refuerzos
+        fondo = refuerzos.fondo_degradado(ruta("fondo-horizontal.png"), geo["h"]["fondoArriba"], geo["h"]["fondoAbajo"])
+        entradas += ["-framerate", str(FPS), "-i", fondo]
+        g.append(f"[1:v]format=rgba,loop=loop=-1:size=1:start=0,setpts=N/{FPS}/TB,trim=duration={dur:.3f},format=yuv420p[fondo]")
+        g.append(f"[fondo][vz]overlay=x=0:y={geo['top']}[v0]")
+        idx = 2
+    else:
+        g.append("[vz]null[v0]")
     ultimo = "v0"
     if bn:
         g.append(f"[{ultimo}]hue=s=0:enable='{entre(bn)}',eq=contrast=1.08:enable='{entre(bn)}'[vbn]")
         ultimo = "vbn"
-    entradas = ["-i", proyecto["video"]]
-    idx = 1
     for j, cp in enumerate(capas):
         # Cada imagen se decodifica una sola vez y se repite en memoria (más rápido que -loop 1)
         entradas += ["-framerate", str(FPS), "-i", cp["archivo"]]
@@ -764,7 +833,7 @@ if __name__ == "__main__":
     if cmd == "preparar":
         if len(a) < 2:
             raise SystemExit("Uso: editor.py preparar VIDEO")
-        preparar(a[1], sin_cortes="--sin-cortes" in a, modelo=opcion("--modelo", "small"))
+        preparar(a[1], sin_cortes="--sin-cortes" in a, modelo=opcion("--modelo", "small"), modo=opcion("--modo"))
     elif cmd == "render":
         render(borrador="--borrador" in a, musica=opcion("--musica"), estilo_nombre=opcion("--estilo"))
     elif cmd == "cuadro":
