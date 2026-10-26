@@ -31,6 +31,7 @@ Si la persona pide lo contrario ("recórtalo vertical" o "déjalo con bandas"), 
 - Si adjuntó un archivo `mi-estilo.json`, es su estilo guardado de un chat anterior: cópialo a `/tmp/editor-reels-trabajo/estilo.json` antes de preparar.
 - Si escribió algo junto con el pedido ("sin títulos", "estilo serif", "no cortes los silencios", "subtítulos más grandes"), tenlo en cuenta.
 - Si no adjuntó capturas, no las pidas: sigue sin ellas.
+- Si dice que no pudo adjuntar el video porque pesa más de 400 MB: explícale que lo exporte en 1080p (HandBrake con el preset "Fast 1080p30", o CapCut) y que para los próximos grabe en 1080p a 30 fps en lugar de 4K (iPhone: Ajustes → Cámara → Grabar video).
 
 ## 2. Preparar: transcribir y quitar silencios
 
