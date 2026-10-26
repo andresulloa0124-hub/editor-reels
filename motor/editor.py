@@ -5,6 +5,7 @@ Comandos:
   python3 editor.py preparar VIDEO [--sin-cortes] [--modelo small|base]
   python3 editor.py render [--borrador] [--musica AUDIO] [--estilo NOMBRE]
   python3 editor.py cuadro SEGUNDO          (imagen de un momento del Reel, para revisar)
+  python3 editor.py buscar "frase"          (en qué segundo se dice una frase)
 
 Todo se guarda en la carpeta de trabajo (por defecto /tmp/editor-reels-trabajo):
   proyecto.json, subtitulos.json, transcripcion.txt, textos.json, broll.json, estilo.json
@@ -369,6 +370,16 @@ def fuente(nombre, peso):
     return clave, METRICAS[clave]
 
 
+# Letras para variar según lo que se dice: (fuente, peso, multiplicador de tamaño frente al subtítulo)
+ACENTOS = {
+    "manuscrita": ("Caveat", 700, 2.2),
+    "marcador": ("PermanentMarker", 400, 1.2),
+    "serif": ("InstrumentSerif", 400, 1.9),
+    "serif-italica": ("InstrumentSerifItalic", 400, 1.9),
+    "grande": (None, 900, 1.5),
+}
+
+
 def color(hexa, alfa=0):
     hexa = (hexa or "#FFFFFF").lstrip("#")
     r, g, b = hexa[0:2], hexa[2:4], hexa[4:6]
@@ -411,7 +422,7 @@ def armar_bloques(subs, por_bloque):
 def generar_ass(estilo, subs, textos, ocultos):
     s, ti, se = estilo["subtitulos"], estilo["titulos"], estilo["secciones"]
     f_sub, k_sub = fuente(s["fuente"], s["peso"])
-    f_enf, _ = fuente(s["fuente"], s.get("pesoEnfasis", s["peso"]))
+    f_enf, _ = fuente(s.get("fuenteEnfasis", s["fuente"]), s.get("pesoEnfasis", s["peso"]))
     f_tit, k_tit = fuente(ti["fuente"], ti["peso"])
     f_sec, k_sec = fuente(se["fuente"], se["peso"])
     tam_sub = round(s["tamano"] * k_sub)
@@ -423,7 +434,9 @@ def generar_ass(estilo, subs, textos, ocultos):
         "[V4+ Styles]",
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
         "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
-        f"Style: Sub,{f_sub},{tam_sub},{color(s['colorTexto'])},{color(s['colorTexto'])},{color(s.get('colorBorde', '#000000'))},&H80000000,0,0,0,0,100,100,0,0,1,{borde},0,5,70,70,0,1",
+        (f"Style: Sub,{f_sub},{tam_sub},{color(s['colorTexto'])},{color(s['colorTexto'])},{color(s['fondoCaja'])},{color(s['fondoCaja'])},0,0,0,0,100,100,0,0,3,{s.get('rellenoCaja', 14)},0,5,70,70,0,1"
+         if s.get("fondoCaja") else
+         f"Style: Sub,{f_sub},{tam_sub},{color(s['colorTexto'])},{color(s['colorTexto'])},{color(s.get('colorBorde', '#000000'))},&H80000000,0,0,0,0,100,100,0,0,1,{borde},0,5,70,70,0,1"),
         f"Style: Tit,{f_tit},{round(ti['tamano'] * k_tit)},{color(ti['color'])},{color(ti['color'])},{color(ti.get('colorBorde', '#000000'))},&H80000000,0,0,0,0,100,100,0,0,1,{ti.get('grosorBorde', 0) / 2},0,5,60,60,0,1",
         f"Style: Sec,{f_sec},{round(se['tamano'] * k_sec)},{color(se['color'])},{color(se['color'])},{color(se.get('colorBorde', '#000000'))},&H80000000,0,0,0,0,100,100,0,0,1,{se.get('grosorBorde', 0) / 2},0,5,60,60,0,1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
@@ -445,6 +458,12 @@ def generar_ass(estilo, subs, textos, ocultos):
         c = (p["inicio"] + p["fin"]) / 2
         return any(e["inicio"] <= c <= e["fin"] for e in enfasis)
 
+    acentos = [t for t in textos if t.get("tipo") == "acento"]
+
+    def acento_de(p):
+        c = (p["inicio"] + p["fin"]) / 2
+        return next((a for a in acentos if a["inicio"] <= c <= a["fin"]), None)
+
     if s.get("activados", True):
         y = round(H * s["posicionVertical"] / 100)
         for b in armar_bloques(subs, max(1, s.get("palabrasPorBloque", 3))):
@@ -462,15 +481,30 @@ def generar_ass(estilo, subs, textos, ocultos):
                     txt = limpiar(p["texto"].upper() if s.get("mayusculas") else p["texto"])
                     activa = s.get("estilo") in ("resaltado", "caja") and p["inicio"] <= a < p["fin"]
                     tags = ""
-                    if es_enfasis(p):
+                    ac = acento_de(p)
+                    if ac:
+                        nombre, peso, mult = ACENTOS.get(ac.get("estilo", "manuscrita"), ACENTOS["manuscrita"])
+                        if nombre is None:
+                            nombre, peso = s["fuente"], s.get("pesoEnfasis", 800)
+                        f_ac, k_ac = fuente(nombre, peso)
+                        if ac.get("estilo") in ("manuscrita", "marcador") or ac.get("mayusculas"):
+                            txt = txt.upper() if ac.get("mayusculas", ac.get("estilo") == "marcador") else txt
+                        tags += f"\\fn{f_ac}\\fs{round(s['tamano'] * mult * k_ac)}"
+                        tags += f"\\1c{color(ac.get('color') or s.get('colorAcento') or s.get('colorEnfasis', s['colorTexto']))}"
+                        if ac.get("subrayado"):
+                            tags += "\\u1"
+                    elif es_enfasis(p):
                         tags += f"\\fn{f_enf}\\1c{color(s.get('colorEnfasis', s['colorTexto']))}"
                     if activa:
                         tags += f"\\1c{color(s['colorPalabraActiva'])}"
-                    piezas.append(f"{{{tags}}}{txt}{{\\r}}" if tags else txt)
+                    # Al terminar la palabra se vuelve al estilo normal sin usar \\r (que borraría la capa de sombra)
+                    volver = f"\\fn{f_sub}\\fs{tam_sub}\\1c{color(s['colorTexto'])}\\u0"
+                    piezas.append(f"{{{tags}}}{txt}{{{volver}}}" if tags else txt)
                 anim = ""
                 if i == 0 and s.get("animacionEntrada", True):
                     anim = "\\fscx88\\fscy88\\t(0,140,\\fscx100\\fscy100)\\fad(70,0)"
-                evento(a, z, "Sub", f"{{\\an5\\pos(540,{y}){anim}}}" + " ".join(piezas), s.get("sombra", True))
+                evento(a, z, "Sub", f"{{\\an5\\pos(540,{y}){anim}}}" + " ".join(piezas),
+                       s.get("sombra", True) and not s.get("fondoCaja"))
 
     # --- Títulos y secciones
     for t in textos:
@@ -485,6 +519,12 @@ def generar_ass(estilo, subs, textos, ocultos):
             y = H * ti["posicionVertical"] / 100
             alto_linea = ti["tamano"] * factor * 0.98
             tam = f"\\fs{round(ti['tamano'] * k_tit * factor)}" if factor < 1 else ""
+            if t.get("estilo") in ACENTOS and ACENTOS[t["estilo"]][0]:
+                nombre, peso, mult = ACENTOS[t["estilo"]]
+                f_x, k_x = fuente(nombre, peso)
+                mult_t = {"serif": 1.3, "serif-italica": 1.3, "manuscrita": 1.35, "marcador": 0.95}.get(t["estilo"], 1)
+                tam = f"\\fn{f_x}\\fs{round(ti['tamano'] * k_x * factor * mult_t)}"
+                alto_linea *= 0.92 * mult_t
             # Cada línea va en su propio evento para controlar el interlineado (como en el diseño original)
             for n, linea in enumerate(lineas):
                 yl = round(y + (n - (len(lineas) - 1) / 2) * alto_linea)
@@ -526,6 +566,63 @@ def preparar_tarjeta(origen, destino, ancho_px):
     return lienzo.size
 
 
+# ------------------------------------------------------------------ capas (tarjetas y refuerzos)
+def a_original(t, tramos):
+    """Tiempo del Reel → tiempo del video original."""
+    acumulado = 0.0
+    for a, b in tramos:
+        if t < acumulado + (b - a):
+            return a + (t - acumulado)
+        acumulado += b - a
+    return tramos[-1][1] - 0.05
+
+
+def construir_capas(estilo, textos, broll, proyecto):
+    sys.path.insert(0, AQUI)
+    import refuerzos
+
+    capas = []
+    # Capturas propias (broll.json)
+    ancho_t = int(W * estilo.get("tarjetas", {}).get("ancho", 0.74))
+    y_centro = H * estilo.get("tarjetas", {}).get("posicionVertical", 70) / 100
+    for i, c in enumerate(broll):
+        img = c.get("imagen") or c.get("archivo")
+        if not img or not os.path.exists(img):
+            print(f"⚠️  No encontré la imagen {img}: se omite.")
+            continue
+        destino = ruta(f"tarjeta-{i:02d}.png")
+        w_t, h_t = preparar_tarjeta(img, destino, ancho_t)
+        capas.append({"archivo": destino, "x": (W - w_t) // 2, "y": int(y_centro - h_t / 2),
+                      "inicio": float(c["inicio"]), "fin": float(c["fin"]), "entrada": "subir"})
+
+    # Refuerzos gráficos (textos.json)
+    c = {**refuerzos.DEFECTO, **estilo.get("refuerzos", {})}
+    if not c.get("activados", True):
+        return capas
+    carpeta = ruta("refuerzos")
+    os.makedirs(carpeta, exist_ok=True)
+    panel = None
+    for i, t in enumerate(textos):
+        tipo = t.get("tipo")
+        if tipo not in ("lista", "checklist", "cita"):
+            continue
+        t = {**t, "inicio": float(t["inicio"]), "fin": float(t["fin"])}
+        if t.get("fondo") and tipo != "cita":
+            panel = panel or refuerzos.panel(os.path.join(carpeta, "panel.png"), c)
+            capas.append({"archivo": panel, "x": 0, "y": 0, "inicio": t["inicio"], "fin": t["fin"], "entrada": "fade"})
+        if tipo == "lista":
+            capas += refuerzos.lista(t, carpeta, c, i)
+        elif tipo == "checklist":
+            capas += refuerzos.checklist(t, carpeta, c, i)
+        elif tipo == "cita":
+            foto = os.path.join(carpeta, f"foto{i:02d}.jpg")
+            momento = t.get("momentoFoto", t["inicio"])
+            ff(["-y", "-ss", f"{a_original(momento, proyecto['tramos']):.3f}", "-i", proyecto["video"], "-frames:v", "1",
+                "-vf", f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H}", foto], mostrar_error=False)
+            capas += refuerzos.cita(t, carpeta, c, i, foto)
+    return capas
+
+
 # ------------------------------------------------------------------ render
 def entre(intervalos, var="t"):
     if not intervalos:
@@ -544,18 +641,7 @@ def render(borrador=False, musica=None, estilo_nombre=None, hasta=None):
     tramos = proyecto["tramos"]
     dur = proyecto["duracion"]
 
-    # Tarjetas
-    tarjetas = []
-    ancho_t = int(W * estilo.get("tarjetas", {}).get("ancho", 0.74))
-    for i, c in enumerate(broll):
-        img = c.get("imagen") or c.get("archivo")
-        if not img or not os.path.exists(img):
-            print(f"⚠️  No encontré la imagen {img}: se omite.")
-            continue
-        destino = ruta(f"tarjeta-{i:02d}.png")
-        w_t, h_t = preparar_tarjeta(img, destino, ancho_t)
-        tarjetas.append({"archivo": destino, "inicio": float(c["inicio"]), "fin": float(c["fin"]), "w": w_t, "h": h_t})
-
+    capas = construir_capas(estilo, textos, broll, proyecto)
     ass = generar_ass(estilo, subs, textos, [])
 
     # Zoom alternado por cortes
@@ -581,16 +667,22 @@ def render(borrador=False, musica=None, estilo_nombre=None, hasta=None):
         ultimo = "vbn"
     entradas = ["-i", proyecto["video"]]
     idx = 1
-    for j, t in enumerate(tarjetas):
-        entradas += ["-loop", "1", "-framerate", str(FPS), "-t", f"{dur:.3f}", "-i", t["archivo"]]
-        d = min(0.2, (t["fin"] - t["inicio"]) / 3)
-        x = f"({W}-w)/2"
-        y_centro = H * estilo.get("tarjetas", {}).get("posicionVertical", 70) / 100
-        y = f"{y_centro:.0f}-h/2"
-        g.append(f"[{idx}:v]format=rgba,fade=t=in:st={t['inicio']:.3f}:d={d:.3f}:alpha=1,"
-                 f"fade=t=out:st={t['fin'] - d:.3f}:d={d:.3f}:alpha=1[t{j}]")
-        g.append(f"[{ultimo}][t{j}]overlay=x={x}:y={y}:enable='between(t,{t['inicio']:.3f},{t['fin']:.3f})':eof_action=pass[vt{j}]")
-        ultimo = f"vt{j}"
+    for j, cp in enumerate(capas):
+        # Cada imagen se decodifica una sola vez y se repite en memoria (más rápido que -loop 1)
+        entradas += ["-framerate", str(FPS), "-i", cp["archivo"]]
+        ini, fin = cp["inicio"], cp["fin"]
+        d = min(0.18, (fin - ini) / 3)
+        cadena = f"[{idx}:v]format=rgba,loop=loop=-1:size=1:start=0,setpts=N/{FPS}/TB,trim=duration={dur:.3f}"
+        if cp.get("entrada", "subir") != "corte":
+            cadena += f",fade=t=in:st={ini:.3f}:d={d:.3f}:alpha=1"
+        if cp.get("salida", True):
+            cadena += f",fade=t=out:st={fin - d:.3f}:d={d:.3f}:alpha=1"
+        g.append(cadena + f"[c{j}]")
+        y = str(cp["y"])
+        if cp.get("entrada", "subir") == "subir":
+            y = f"{cp['y']}+46*max(0,1-(t-{ini:.3f})/0.22)"
+        g.append(f"[{ultimo}][c{j}]overlay=x={cp['x']}:y='{y}':eval=frame:enable='between(t,{ini:.3f},{fin:.3f})':eof_action=pass[vc{j}]")
+        ultimo = f"vc{j}"
         idx += 1
     g.append(f"[{ultimo}]subtitles=filename={ass}:fontsdir={FUENTES},format=yuv420p[vout]")
 
@@ -635,6 +727,26 @@ def cuadro(segundo):
     print(f"🖼  {png}")
 
 
+def buscar(frase):
+    """Muestra en qué segundo del Reel se dice una frase (para planear refuerzos con tiempos exactos)."""
+    import unicodedata
+
+    def norm(x):
+        x = unicodedata.normalize("NFD", x.lower())
+        return "".join(ch for ch in x if ch.isalnum() and unicodedata.category(ch) != "Mn")
+
+    subs = leer("subtitulos.json", [])
+    objetivo = [norm(p) for p in frase.split() if norm(p)]
+    hallados = 0
+    for i in range(len(subs) - len(objetivo) + 1):
+        if all(norm(subs[i + k]["texto"]).startswith(objetivo[k]) for k in range(len(objetivo))):
+            fin = subs[i + len(objetivo) - 1]["fin"]
+            print(f"{subs[i]['inicio']:.2f} – {fin:.2f}  " + " ".join(s["texto"] for s in subs[i:i + len(objetivo) + 4]))
+            hallados += 1
+    if not hallados:
+        print(f"No encontré «{frase}». Prueba con menos palabras o revisa transcripcion.txt.")
+
+
 # ------------------------------------------------------------------ CLI
 if __name__ == "__main__":
     a = sys.argv[1:]
@@ -655,6 +767,8 @@ if __name__ == "__main__":
         render(borrador="--borrador" in a, musica=opcion("--musica"), estilo_nombre=opcion("--estilo"))
     elif cmd == "cuadro":
         cuadro(float(a[1]))
+    elif cmd == "buscar":
+        buscar(" ".join(a[1:]))
     elif cmd == "estilo":
         estilo_actual(a[1] if len(a) > 1 else None)
         print(f"✅ Estilo activo guardado en {ruta('estilo.json')}")

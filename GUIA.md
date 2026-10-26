@@ -12,6 +12,7 @@ El motor está en `/tmp/editor-reels/motor/editor.py`. Los archivos de trabajo q
 - **Encabezados de sección fijos arriba** cuando el video tiene pasos o puntos ("PASO 1", "#2") y para el llamado a la acción.
 - **Ritmo rápido**: silencios cortados apretado y zoom alternado en cada corte.
 - De vez en cuando, un momento en **blanco y negro** para marcar un contraste.
+- **Refuerzos dinámicos**: cuando la persona enumera opciones o puntos, aparecen tarjetas que se van armando mientras habla. Algunas palabras cambian de tipo de letra (manuscrita, serif) según la emoción o la importancia de lo que dice. Así el Reel se siente vivo sin taparle la cara todo el tiempo.
 
 ## 1. Encontrar lo que adjuntó
 
@@ -28,7 +29,7 @@ El motor está en `/tmp/editor-reels/motor/editor.py`. Los archivos de trabajo q
 cd /tmp/editor-reels/motor && python3 editor.py preparar "RUTA_DEL_VIDEO"
 ```
 
-Agrega `--sin-cortes` si pidió no quitar silencios. Para elegir un estilo distinto al de Santi, antes ejecuta `python3 editor.py estilo NOMBRE` (santi, santi-serif, santi-minimal, neutro).
+Agrega `--sin-cortes` si pidió no quitar silencios. Para elegir un estilo distinto al de Santi, antes ejecuta `python3 editor.py estilo NOMBRE` (santi, santi-serif, santi-minimal, santi-caja, neutro).
 
 La primera vez en cada chat descarga el modelo de transcripción, que tarda un poco. Antes de ejecutarlo, avísale en una línea que vas a transcribir y cortar silencios y que puede tardar uno o dos minutos. Si el comando se corta por tiempo, vuelve a ejecutarlo en segundo plano (`nohup ... > /tmp/preparar.log 2>&1 &`) y revisa el log cada 30 segundos hasta que termine.
 
@@ -42,13 +43,20 @@ Revisa también `subtitulos.json`. Si ves palabras mal transcritas (nombres prop
 
 ### 3a. Textos → escribe `/tmp/editor-reels-trabajo/textos.json`
 
-Es una lista con cuatro tipos de elementos:
+Es una lista de elementos. Todos los tiempos son en segundos del Reel ya cortado; sácalos con `python3 editor.py buscar "frase"` (te dice en qué segundo empieza y termina), no a ojo de la transcripción.
 
 ```json
 [
   { "tipo": "titulo", "inicio": 0.0, "fin": 1.8, "texto": "¿Cómo hacerte\nviral?" },
+  { "tipo": "titulo", "estilo": "serif", "inicio": 7.8, "fin": 9.6, "texto": "High Ticket" },
   { "tipo": "seccion", "inicio": 12.4, "fin": 31.0, "texto": "Paso 1" },
   { "tipo": "enfasis", "inicio": 14.1, "fin": 14.6 },
+  { "tipo": "acento", "estilo": "manuscrita", "subrayado": true, "inicio": 3.2, "fin": 3.7 },
+  { "tipo": "lista", "fondo": true, "inicio": 16.0, "fin": 26.6,
+    "items": [ { "texto": "Leads", "aparece": 16.8 }, { "texto": "Clientes", "aparece": 21.1 } ] },
+  { "tipo": "checklist", "titulo": "El problema", "inicio": 29.2, "fin": 37.6,
+    "items": [ { "texto": "No ha invertido", "aparece": 30.1 }, { "texto": "No te conoce", "aparece": 32.0 } ] },
+  { "tipo": "cita", "inicio": 61.3, "fin": 64.9, "texto": "Este proceso ha sido un game changer", "etiqueta": "Nombre de la persona" },
   { "tipo": "blancoynegro", "inicio": 40.2, "fin": 42.0 }
 ]
 ```
@@ -67,6 +75,29 @@ Es una lista con cuatro tipos de elementos:
   - Más o menos una cada 2 o 3 frases. Que el rango cubra solo esa palabra o dos.
 - **blancoynegro**: máximo uno o dos por video, de 1 a 3 segundos, cuando habla de un error, del "antes" o de algo negativo. Si no hay un momento claro, no lo uses.
 
+#### Variar los tipos de letra según lo que dice
+
+- **acento** (cambia la letra de las palabras que se dicen en ese rango, dentro del subtítulo):
+  - `"estilo": "manuscrita"` → letra a mano. Para lo emocional, personal o cercano: "mi mayor error", "esta misma semana", "te lo prometo", "me cambió la vida". Con `"subrayado": true` cuando es lo más importante de la frase.
+  - `"estilo": "serif-italica"` o `"serif"` → letra elegante. Para conceptos, ideas o metáforas: "filtro", "todo un reto", "la clave".
+  - `"estilo": "marcador"` → letra de marcador en mayúsculas. Para algo fuerte o urgente: "NUNCA", "GRATIS", "AHORA".
+  - `"estilo": "grande"` → la misma letra, más grande y gruesa. Para números y montos.
+  - El rango debe cubrir solo 1 a 3 palabras. Usa más o menos un acento cada 6 a 10 segundos y no repitas el mismo estilo dos veces seguidas.
+  - En una misma frase usa acento o enfasis, no los dos.
+- **titulo** también acepta `"estilo"`: `"serif"`, `"serif-italica"`, `"manuscrita"` o `"marcador"`. Alterna: si el título anterior fue de bloque normal, el siguiente puede ser serif o marcador. El del gancho casi siempre en el estilo normal.
+
+#### Refuerzos gráficos (tarjetas que se arman mientras habla)
+
+- **lista**: cuando nombra 2 a 6 opciones, tipos, herramientas o cosas en serie ("hay dos tipos de personas: leads y clientes", "dropshipping, Amazon, trading o afiliados").
+  - Cada item tiene `texto` corto (1 a 4 palabras) y `aparece` = el segundo en que dice esa palabra.
+  - `inicio` = cuando anuncia la lista. `fin` = cuando cambia de idea.
+  - `"fondo": true` pone un panel de color de pantalla completa detrás (la cara no se ve). Úsalo solo cuando la lista es el centro de ese momento y dura menos de 10 segundos. Sin fondo, las tarjetas aparecen abajo, sobre la mesa o las manos.
+  - `"columnas"` es opcional: 2 para items cortos, 1 para frases largas.
+- **checklist**: cuando enumera razones, síntomas, errores o pasos con una frase que los agrupa ("el problema es este", "el algoritmo sabe…", "te pagan dos veces"). Lleva `titulo` (2 a 4 palabras) e `items` con `aparece`. Se resalta el último item que dijo. Puede llevar `"fondo": true`.
+- **cita**: una tarjeta tipo foto con una frase textual fuerte. Máximo una por video, en la idea más contundente o en una frase de autoridad o resultado. `texto` de máximo 12 palabras, `etiqueta` con el nombre de la persona o del tema. Aparece arriba a la derecha.
+
+**Cuánto usar:** en un Reel de 60 segundos, entre 2 y 4 refuerzos gráficos (lista, checklist, cita) más 4 a 6 acentos de letra. Deja siempre al menos 3 segundos de solo cara entre dos refuerzos gráficos. Los refuerzos no se cruzan con títulos ni con capturas (`broll.json`). Si el video no enumera nada, no inventes listas: usa solo acentos y títulos.
+
 ### 3b. Tarjetas → escribe `/tmp/editor-reels-trabajo/broll.json`
 
 Solo si adjuntó imágenes. Ponlas donde habla de eso ("estos resultados", "mira lo que me escribió", "como este", cifras):
@@ -81,7 +112,7 @@ Cada tarjeta dura entre 2 y 5 segundos. No pongas una tarjeta al mismo tiempo qu
 
 ### 3c. Revisar antes de renderizar
 
-Saca 2 o 3 cuadros de momentos clave para comprobar que nada se monta: el gancho, una tarjeta y un título.
+Saca 2 o 3 cuadros de momentos clave para comprobar que nada se monta: el gancho, un refuerzo gráfico y un acento de letra.
 
 ```
 python3 editor.py cuadro SEGUNDO
@@ -94,6 +125,7 @@ Abre las imágenes que genera (`/mnt/user-data/outputs/cuadro-*.png`) y míralas
 Muéstrale un resumen corto antes de renderizar:
 - Cuánto dura el Reel y cuánto silencio se quitó.
 - Los títulos y secciones que pusiste, con el momento de cada uno.
+- Los refuerzos (listas, checklist, cita) y las palabras que cambian de letra.
 - Dónde aparece cada captura y qué está diciendo ahí.
 
 Pregúntale si quiere cambiar algo o si renderizas. Si no responde o dice que sí, renderiza.
@@ -126,7 +158,11 @@ La persona pide cambios en lenguaje normal. Haz el cambio y vuelve a renderizar.
 | Sin títulos / sin secciones | `titulos.activados` / `secciones.activados` = false |
 | Sin zooms / zoom más suave o fuerte | `zooms.activados`, `zooms.intensidad` (1.08 suave, 1.15 normal, 1.22 fuerte) |
 | Música más alta o más baja | `musica.volumen` (0.05 muy suave, 0.08 normal, 0.15 alta) |
-| Otro estilo completo | `python3 editor.py estilo NOMBRE` |
+| Otro estilo completo | `python3 editor.py estilo NOMBRE` (santi, santi-serif, santi-minimal, santi-caja, neutro) |
+| Subtítulos en caja de color (como los de serif con fondo) | estilo `santi-caja`, o `subtitulos.fondoCaja` (hexadecimal) |
+| Más o menos refuerzos / cambios de letra | agrega o quita elementos `lista`, `checklist`, `cita`, `acento` en `textos.json` |
+| Sin refuerzos gráficos | `refuerzos.activados` = false |
+| Colores de las tarjetas | `refuerzos.colorTarjeta`, `colorBorde`, `colorResaltado`, `colorPanel` |
 | Cambiar, mover o quitar un título, sección, negrita o tarjeta | edita `textos.json` o `broll.json` |
 | Corregir una palabra de los subtítulos | edita `texto` en `subtitulos.json` |
 | Que corte menos silencios | sube `silencios.duracionMinima` (ej. 0.7) y vuelve a **preparar** (luego vuelve a planear los textos) |

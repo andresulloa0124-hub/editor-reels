@@ -1,0 +1,84 @@
+{
+  "_ayuda": "Estilo del Reel. Para cambiarlo, pídeselo a Claude con tus palabras.",
+  "subtitulos": {
+    "activados": true,
+    "fuente": "InstrumentSerif",
+    "peso": 400,
+    "pesoEnfasis": 400,
+    "tamano": 60,
+    "mayusculas": false,
+    "colorTexto": "#FFFFFF",
+    "colorEnfasis": "#FFFFFF",
+    "colorPalabraActiva": "#FFD60A",
+    "colorBorde": "#000000",
+    "grosorBorde": 0,
+    "sombra": false,
+    "estilo": "simple",
+    "posicionVertical": 62,
+    "palabrasPorBloque": 3,
+    "animacionEntrada": true,
+    "colorAcento": "#FFFFFF",
+    "fondoCaja": "#1F3A2E",
+    "rellenoCaja": 12,
+    "fuenteEnfasis": "InstrumentSerifItalic"
+  },
+  "titulos": {
+    "activados": true,
+    "fuente": "InstrumentSerif",
+    "peso": 400,
+    "tamano": 150,
+    "mayusculas": true,
+    "color": "#FFFFFF",
+    "posicionVertical": 16,
+    "sombra": true,
+    "grosorBorde": 0,
+    "colorBorde": "#000000"
+  },
+  "secciones": {
+    "activados": true,
+    "fuente": "InstrumentSerif",
+    "peso": 400,
+    "tamano": 76,
+    "mayusculas": false,
+    "color": "#FFFFFF",
+    "posicionVertical": 22,
+    "sombra": true,
+    "grosorBorde": 0,
+    "colorBorde": "#000000"
+  },
+  "zooms": {
+    "activados": true,
+    "intensidad": 1.15
+  },
+  "musica": {
+    "volumen": 0.08
+  },
+  "silencios": {
+    "duracionMinima": 0.35,
+    "margen": 0.1,
+    "sobreRuidoDb": 9,
+    "_ayuda": "duracionMinima: segundos de silencio para cortar. margen: segundos que se dejan antes y después de cada frase. sobreRuidoDb: cuántos dB por encima del ruido de fondo cuenta como voz (más alto = corta más)"
+  },
+  "transcripcion": {
+    "idioma": "es"
+  },
+  "_nombre": "santi-caja",
+  "tarjetas": {
+    "ancho": 0.74,
+    "posicionVertical": 70
+  },
+  "refuerzos": {
+    "activados": true,
+    "fuente": "Montserrat-800",
+    "fuenteTitulo": "Montserrat-900",
+    "colorTarjeta": "#EEE8F2",
+    "colorBorde": "#5E4B7A",
+    "colorBase": "#B8A6CC",
+    "colorTexto": "#2B2233",
+    "colorResaltado": "#6A5180",
+    "colorTextoResaltado": "#FFFFFF",
+    "colorPanel": "#173F3E",
+    "colorPapel": "#F4F0E6",
+    "_ayuda": "Colores y letras de las tarjetas de lista, checklist, cita y panel de fondo"
+  }
+}

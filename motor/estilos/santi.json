@@ -16,7 +16,8 @@
     "estilo": "simple",
     "posicionVertical": 52,
     "palabrasPorBloque": 3,
-    "animacionEntrada": true
+    "animacionEntrada": true,
+    "colorAcento": "#FFFFFF"
   },
   "titulos": {
     "activados": true,
@@ -62,5 +63,19 @@
   "tarjetas": {
     "ancho": 0.74,
     "posicionVertical": 70
+  },
+  "refuerzos": {
+    "activados": true,
+    "fuente": "Montserrat-800",
+    "fuenteTitulo": "Montserrat-900",
+    "colorTarjeta": "#EEE8F2",
+    "colorBorde": "#5E4B7A",
+    "colorBase": "#B8A6CC",
+    "colorTexto": "#2B2233",
+    "colorResaltado": "#6A5180",
+    "colorTextoResaltado": "#FFFFFF",
+    "colorPanel": "#173F3E",
+    "colorPapel": "#F4F0E6",
+    "_ayuda": "Colores y letras de las tarjetas de lista, checklist, cita y panel de fondo"
   }
 }

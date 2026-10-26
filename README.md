@@ -3,6 +3,8 @@
 Skill para Claude que convierte un video hablado a cámara en un Reel vertical editado:
 silencios cortados, subtítulos con palabras clave en negrita, títulos de énfasis, encabezados de sección,
 zoom en los cortes, capturas propias como tarjetas y volumen parejo.
+Además agrega refuerzos dinámicos mientras la persona habla: tarjetas de lista, checklist con la opción resaltada,
+cita tipo foto y palabras que cambian de letra (manuscrita, serif, marcador) según lo que dice.
 
 ## Cómo instalarla (estudiantes)
 
@@ -16,7 +18,8 @@ zoom en los cortes, capturas propias como tarjetas y volumen parejo.
 - `skill/editor-reels/SKILL.md`: la skill que sube cada estudiante. Solo descarga la última versión de este repo.
 - `GUIA.md`: las instrucciones que sigue Claude (planeación de títulos, secciones, negritas, tarjetas).
 - `motor/editor.py`: transcribe con whisper.cpp y renderiza con FFmpeg + subtítulos ASS.
-- `motor/estilos/`: estilos listos (santi, santi-serif, santi-minimal, neutro).
+- `motor/refuerzos.py`: dibuja las tarjetas de lista, checklist, cita y el panel de fondo.
+- `motor/estilos/`: estilos listos (santi, santi-serif, santi-minimal, santi-caja, neutro).
 - Release `modelos`: modelos de transcripción (`ggml-small-q5_1.bin`, `ggml-base-q5_1.bin`). No borrarlo.
 - `descargar/editor-reels.zip`: la skill empaquetada para subir a claude.ai.
 
